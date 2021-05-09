@@ -1,5 +1,11 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import { resolve } from 'path'
+
+/* 路径方法 */
+const pathResolver = (pathStr: string): string => {
+  return resolve(__dirname, '.', pathStr)
+}
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -19,9 +25,15 @@ export default defineConfig({
       }
     }
   },
+  resolve: {
+    alias: {
+      '@': pathResolver('./src')
+    }
+  },
+
   server: {
     proxy: {
-      '/login': {
+      '/api': {
         target: 'http://localhost:9000',
         changeOrigin: true
       }

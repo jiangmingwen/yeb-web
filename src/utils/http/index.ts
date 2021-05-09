@@ -1,32 +1,48 @@
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios'
 import { ElNotification } from 'element-plus'
+import { local } from '../storage'
 
 function request<T>(url: string, options?: AxiosRequestConfig): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     axios({
+      baseURL: '/api',
       url,
-      ...options
+      ...options,
+      headers: {
+        ...options?.headers,
+        Authorization:
+          local.getItem('TOKENHEAD', '') + ' ' + local.getItem('TOKEN', '')
+      }
     })
-      .then(parseData)
+      .then((response) => parseData<T>(response))
       .then((res) => {
         if (res.code === 200) {
-          resolve(res.data as T)
+          resolve(res.data)
         } else {
           ElNotification({
             type: 'error',
-            title: res.code,
+            title: res.code + '',
             message: res?.message
           })
           reject(res.data)
         }
       })
       .catch((err: AxiosError) => {
-        const data = err.response?.data || {}
-        ElNotification({
-          type: 'error',
-          title: data.code,
-          message: data?.message
-        })
+        const data = err.response?.data
+
+        if (data) {
+          ElNotification({
+            type: 'error',
+            title: data.code,
+            message: data?.message
+          })
+        } else {
+          ElNotification({
+            type: 'error',
+            title: err?.response?.status + '' || '请求数据错误',
+            message: err?.response?.statusText || '未知错误'
+          })
+        }
         reject(err.response)
       })
   })
@@ -64,7 +80,13 @@ function putMethod<T>(
   return request<T>(url, { ...options, data, method: 'PUT' })
 }
 
-function parseData(response: AxiosResponse) {
+export interface IhttpData<T> {
+  code: number
+  data: T
+  message: string
+}
+
+function parseData<T>(response: AxiosResponse): IhttpData<T> {
   return response.data
 }
 
